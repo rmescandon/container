@@ -35,10 +35,6 @@ const (
 func init() {
 	// Prevent infinite recursive calls to child
 	if os.Args[0] == selfProc {
-
-		//TODO TRACE
-		log.Println("REEXEC ON INIT")
-
 		reexec(os.Args[1:])
 		os.Exit(0)
 	}
@@ -56,17 +52,7 @@ func (r *RunCmd) Execute(args []string) error {
 	return run(args)
 }
 
-// Execute executes the command
-func (r *ReexecCmd) Execute(args []string) error {
-	//reexec(args)
-	return nil
-}
-
 func run(args []string) error {
-
-	// TODO TRACE
-	log.Printf("ARGS[0]:%v", args[0])
-
 	cmd := exec.Command(selfProc, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
