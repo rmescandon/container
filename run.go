@@ -29,12 +29,16 @@ import (
 
 const prompt = "[container] # "
 
-var child func(args []string)
-
 func init() {
-	child = doChild
+	// TODO TRACE
+	log.Printf("ARGS DE CERO: %v", os.Args[0])
 	// Prevent infinite recursive calls to child
-	if os.Args[0] == "child" {
+	if os.Args[1] == "reexec" {
+
+		//TODO TRACE
+		log.Println("REEXEC ON INIT")
+
+		reexec(os.Args[2:])
 		os.Exit(0)
 	}
 }
@@ -51,13 +55,14 @@ func (r *RunCmd) Execute(args []string) error {
 	return run(args)
 }
 
-func (r *ChildCmd) Execute(args []string) error {
-	child(args)
+// Execute executes the command
+func (r *ReexecCmd) Execute(args []string) error {
+	//reexec(args)
 	return nil
 }
 
 func run(args []string) error {
-	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, args...)...)
+	cmd := exec.Command("/proc/self/exe", append([]string{"reexec"}, args...)...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -89,15 +94,19 @@ func run(args []string) error {
 	return cmd.Run()
 }
 
-func doChild(args []string) {
-	cmd := exec.Command("/bin/sh")
+func reexec(args []string) {
+	// TODO TRACE
+	log.Println("REEXEC")
+
+	cmd := exec.Command("/bin/sh", args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	cmd.Env = []string{fmt.Sprintf("PS1=%v", prompt)}
-
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Error on container: %v", err)
 	}
+
+	// TODO TRACE
+	log.Println("END")
 }

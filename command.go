@@ -21,13 +21,12 @@ package container
 
 // Cmd holds the cli arguments
 type Cmd struct {
-	Run   RunCmd   `command:"run" description:"Runs into a new container the rest of the parameters in a shell environment"`
-	Child ChildCmd `command:"child" description:"Runs child into a new container"`
+	Run   RunCmd    `command:"run" description:"Runs into a new container the rest of the parameters in a shell environment"`
+	Child ReexecCmd `command:"reexec" description:"Runs child into a new container" hidden:"true"`
 }
 
-// RunCmd command executed when wanted to execute a command into a new container
-type RunCmd struct {
-}
+// RunCmd command to prepare a shell session into a container
+type RunCmd struct{}
 
-type ChildCmd struct {
-}
+// ReexecCmd command re-executing a Run with container namespaces already set up
+type ReexecCmd struct{}
