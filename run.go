@@ -27,18 +27,19 @@ import (
 	"syscall"
 )
 
-const prompt = "[container] # "
+const (
+	prompt   = "[container] # "
+	selfProc = "/proc/self/exe"
+)
 
 func init() {
-	// TODO TRACE
-	log.Printf("ARGS DE CERO: %v", os.Args[0])
 	// Prevent infinite recursive calls to child
-	if os.Args[1] == "reexec" {
+	if os.Args[0] == selfProc {
 
 		//TODO TRACE
 		log.Println("REEXEC ON INIT")
 
-		reexec(os.Args[2:])
+		reexec(os.Args[1:])
 		os.Exit(0)
 	}
 }
@@ -62,7 +63,11 @@ func (r *ReexecCmd) Execute(args []string) error {
 }
 
 func run(args []string) error {
-	cmd := exec.Command("/proc/self/exe", append([]string{"reexec"}, args...)...)
+
+	// TODO TRACE
+	log.Printf("ARGS[0]:%v", args[0])
+
+	cmd := exec.Command(selfProc, args...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -95,10 +100,7 @@ func run(args []string) error {
 }
 
 func reexec(args []string) {
-	// TODO TRACE
-	log.Println("REEXEC")
-
-	cmd := exec.Command("/bin/sh", args...)
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -106,7 +108,4 @@ func reexec(args []string) {
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Error on container: %v", err)
 	}
-
-	// TODO TRACE
-	log.Println("END")
 }
