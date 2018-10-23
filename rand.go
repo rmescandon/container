@@ -17,39 +17,16 @@
  *
  */
 
-package main
+package container
 
-import (
-	"flag"
-	"fmt"
-	"os"
+import "math/rand"
 
-	"github.com/rmescandon/container"
-)
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func usage() {
-	helpContent := `Usage: container [COMMAND] <args>
-
-  Available commands:
-  	run  Runs into a new container the rest of the parameters in a shell environment
-
-`
-	fmt.Fprintf(flag.CommandLine.Output(), helpContent)
-	flag.PrintDefaults()
-}
-
-func main() {
-	flag.Usage = usage
-
-	var help bool
-	flag.BoolVar(&help, "-help, -h", false, "Show this help message")
-
-	flag.Parse()
-
-	if flag.NArg() == 0 || flag.Args()[0] != "run" || help {
-		flag.Usage()
-		os.Exit(1)
+func randStr(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
-
-	container.Run(flag.Args())
+	return string(b)
 }

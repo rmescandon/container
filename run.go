@@ -22,7 +22,6 @@ package container
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -36,6 +35,11 @@ const (
 func init() {
 	// Prevent infinite recursive calls to child
 	if os.Args[0] == selfProc {
+		if len(os.Args) <= 1 {
+			fmt.Println("Please provide more parameters")
+			os.Exit(1)
+		}
+
 		reexec(os.Args[1:])
 		os.Exit(0)
 	}
@@ -59,9 +63,8 @@ func Run(args []string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	cmd.Env = []string{fmt.Sprintf("PS1=%v", prompt)}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS |
+		Cloneflags: syscall.CLONE_NEWNS |
 			syscall.CLONE_NEWUTS |
 			// syscall.CLONE_NEWIPC |
 			// syscall.CLONE_NEWPID |
@@ -87,12 +90,21 @@ func Run(args []string) error {
 }
 
 func reexec(args []string) {
+	// Setup container hostname
+	hostname := fmt.Sprintf("[container-%v] # ", randStr(6))
+	if err := syscall.Sethostname([]byte(hostname)); err != nil {
+		fmt.Printf("Could not set the hostname - %s\n", err)
+		os.Exit(1)
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = []string{fmt.Sprintf("PS1=%v", hostname)}
 
 	if err := cmd.Run(); err != nil {
-		log.Fatalf("Error on container: %v", err)
+		fmt.Printf("Error on execution - %s\n", err)
+		os.Exit(1)
 	}
 }
