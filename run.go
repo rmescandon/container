@@ -20,6 +20,7 @@
 package container
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -47,13 +48,13 @@ Configurable items:
 - uts mappings
 */
 
-// Execute executes the command
-func (r *RunCmd) Execute(args []string) error {
-	return run(args)
-}
+// Run runs command in a new container
+func Run(args []string) error {
+	if len(args) == 0 {
+		return errors.New("You must provide a command to run into the container")
+	}
 
-func run(args []string) error {
-	cmd := exec.Command(selfProc, args...)
+	cmd := exec.Command(selfProc, args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

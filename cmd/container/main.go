@@ -20,32 +20,36 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
-	flags "github.com/jessevdk/go-flags"
 	"github.com/rmescandon/container"
 )
 
+const helpUsage = "Show this help message"
+
 func main() {
-	err := run()
-	if err != nil {
+	flag.Usage = func() {
+		helpContent := `Usage: container [COMMAND] <args>
+
+  Available commands:
+  	run  Runs into a new container the rest of the parameters in a shell environment
+
+`
+		fmt.Fprintf(flag.CommandLine.Output(), helpContent)
+		flag.PrintDefaults()
+	}
+
+	var help bool
+	flag.BoolVar(&help, "-help, -h", false, helpUsage)
+
+	flag.Parse()
+
+	if flag.NArg() == 0 || help {
+		flag.Usage()
 		os.Exit(1)
 	}
-}
 
-func run() error {
-	// Parse the command line arguments and execute the command
-	parser := flags.NewParser(new(container.Cmd), flags.HelpFlag)
-	_, err := parser.Parse()
-	if err != nil {
-		if e, ok := err.(*flags.Error); ok {
-			if e.Type == flags.ErrHelp || e.Type == flags.ErrCommandRequired {
-				parser.WriteHelp(os.Stdout)
-				return nil
-			}
-		}
-		fmt.Println(err)
-	}
-	return err
+	container.Run(flag.Args())
 }
