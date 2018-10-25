@@ -58,18 +58,22 @@ func Run(args []string) error {
 		return errors.New("You must provide a command to run into the container")
 	}
 
+	// Reexec self process (fork) with cloned namespaces and additional
+	// configuration to isolate the command execution
 	cmd := exec.Command(selfProc, args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	cmd.SysProcAttr = &syscall.SysProcAttr{
+		// Namespaces to clone
 		Cloneflags: syscall.CLONE_NEWNS |
 			syscall.CLONE_NEWUTS |
 			// syscall.CLONE_NEWIPC |
-			// syscall.CLONE_NEWPID |
+			syscall.CLONE_NEWPID |
 			// syscall.CLONE_NEWNET |
 			syscall.CLONE_NEWUSER,
+		// Map container to host users and groups
 		UidMappings: []syscall.SysProcIDMap{
 			{
 				ContainerID: 0,
@@ -91,9 +95,32 @@ func Run(args []string) error {
 
 func reexec(args []string) {
 	// Setup container hostname
+	// (It'll be shown as container prompt)
 	hostname := fmt.Sprintf("[container-%v] # ", randStr(6))
 	if err := syscall.Sethostname([]byte(hostname)); err != nil {
 		fmt.Printf("Could not set the hostname - %s\n", err)
+		os.Exit(1)
+	}
+
+	c, err := loadCfg()
+	if err != nil {
+		fmt.Printf("Could not read settings - %s\n", err)
+		os.Exit(1)
+	}
+
+	// Mount /proc.
+	// This MUST be done BEFORE PIVOTING. Otherwise it wont be allowed to do it.
+	// (now you can check that ps reports only container processes ids
+	// and that ls -lah /proc/mounts reports only container mounts but not host's)
+	if err := mountProc(c.Rootfs); err != nil {
+		fmt.Printf("Could not mount /proc on the new rootfs - %s\n", err)
+		os.Exit(1)
+	}
+
+	// Pivot root to configured rootfs
+	// (now you can check that we have moved to the new path)
+	if err := pivotRoot(c.Rootfs); err != nil {
+		fmt.Printf("Could not pivot to the new rootfs - %s\n", err)
 		os.Exit(1)
 	}
 
