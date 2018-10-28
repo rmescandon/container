@@ -91,6 +91,20 @@ func Run(args []string) error {
 	}
 
 	return cmd.Run()
+
+	// if err := cmd.Start(); err != nil {
+	// 	return fmt.Errorf("Could not start command execution - %s", err)
+	// }
+
+	// if err := configureNetworkOnHost(cmd.Process.Pid); err != nil {
+	// 	return fmt.Errorf("Could not configure network on host - %s", err)
+	// }
+
+	// if err := cmd.Wait(); err != nil {
+	// 	return fmt.Errorf("Error waiting for the command execution to finish - %s", err)
+	// }
+
+	// return nil
 }
 
 func reexec(args []string) {
@@ -124,14 +138,25 @@ func reexec(args []string) {
 		os.Exit(1)
 	}
 
+	// Wait for network interfaces to be ready into the container
+	if err := waitForNetwork(); err != nil {
+		fmt.Printf("Could not setup the network - %s\n", err)
+		os.Exit(1)
+	}
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Env = []string{fmt.Sprintf("PS1=%v", hostname)}
 
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error on execution - %s\n", err)
+	if err := cmd.Start(); err != nil {
+		fmt.Printf("Could not start command execution - %s\n", err)
+		os.Exit(1)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		fmt.Printf("Error waiting for the command execution to finish - %s\n", err)
 		os.Exit(1)
 	}
 }

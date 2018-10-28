@@ -2,16 +2,46 @@
 
 
 [[projects]]
-  digest = "1:a2cff208d4759f6ba1b1cd228587b0a1869f95f22542ec9cd17fff64430113c7"
-  name = "github.com/jessevdk/go-flags"
+  digest = "1:2d9d06cb9d46dacfdbb45f8575b39fc0126d083841a29d4fbf8d97708f43107e"
+  name = "github.com/vishvananda/netlink"
+  packages = [
+    ".",
+    "nl",
+  ]
+  pruneopts = "UT"
+  revision = "a2ad57a690f3caf3015351d2d6e1c0b95c349752"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:e4e30678fb2560b5c62f6308c5023d6c294fc7713216fa379411cc74465e866f"
+  name = "github.com/vishvananda/netns"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c6ca198ec95c841fdb89fc0de7496fed11ab854e"
-  version = "v1.4.0"
+  revision = "13995c7128ccc8e51e9a6bd2b551020a27180abd"
+
+[[projects]]
+  branch = "master"
+  digest = "1:f22e437d9328275884d0ae018ed0de4c280871c944a5ab332aa37fd71fb5801b"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  pruneopts = "UT"
+  revision = "95b1ffbd15a57cc5abb3f04402b9e8ec0016a52c"
+
+[[projects]]
+  digest = "1:7a2dbeee7475ddf9e92c4b004cbda2486b3f8508e03655ad4c202afaf9e3f959"
+  name = "gopkg.in/mikefarah/yaml.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e175af14aaa1d0eff2ee04b691e4a4827a111416"
+  version = "v2.3.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = ["github.com/jessevdk/go-flags"]
+  input-imports = [
+    "github.com/vishvananda/netlink",
+    "gopkg.in/mikefarah/yaml.v2",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
