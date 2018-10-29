@@ -24,6 +24,7 @@ Source file including all the configuration for the NETWORK namespace of the con
 package container
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -31,6 +32,10 @@ import (
 )
 
 func createBridge(name, cidr string) error {
+	if exists(name) {
+		return nil
+	}
+
 	b := &netlink.Bridge{
 		LinkAttrs: netlink.LinkAttrs{
 			Name: name,
@@ -62,11 +67,9 @@ func createVeths(name string) error {
 	veth0 := fmt.Sprintf("%s0", name)
 	veth1 := fmt.Sprintf("%s1", name)
 
-	// Return them if already exists
-	_, err := net.InterfaceByName(veth0)
-	if err == nil {
-		_, err = net.InterfaceByName(veth1)
-		return err
+	// assume that if veth0 exists, also does veth1
+	if exists(veth0) {
+		return nil
 	}
 
 	v := &netlink.Veth{
@@ -116,9 +119,9 @@ func addDefaultRoute(veth1, bridgeIP string) error {
 		return err
 	}
 
-	ip, _, err := net.ParseCIDR(bridgeIP)
-	if err != nil {
-		return fmt.Errorf("Could not parse bridge IP - %s", err)
+	ip := net.ParseIP(bridgeIP)
+	if ip == nil {
+		return errors.New("Could not parse route IP")
 	}
 
 	route := &netlink.Route{
@@ -128,4 +131,9 @@ func addDefaultRoute(veth1, bridgeIP string) error {
 	}
 
 	return netlink.RouteAdd(route)
+}
+
+func exists(name string) bool {
+	_, err := net.InterfaceByName(name)
+	return err == nil
 }

@@ -31,11 +31,6 @@ import (
 	"github.com/vishvananda/netlink"
 )
 
-func waitForNetwork() error {
-	//TODO IMPLEMENT
-	return nil
-}
-
 func configureNetworkOnHost(pid int) error {
 	if err := createBridge("thebridge", "10.20.30.1/24"); err != nil {
 		return err
