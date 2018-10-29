@@ -71,7 +71,7 @@ func Run(args []string) error {
 			syscall.CLONE_NEWUTS |
 			// syscall.CLONE_NEWIPC |
 			syscall.CLONE_NEWPID |
-			// syscall.CLONE_NEWNET |
+			syscall.CLONE_NEWNET |
 			syscall.CLONE_NEWUSER,
 		// Map container to host users and groups
 		UidMappings: []syscall.SysProcIDMap{
