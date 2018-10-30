@@ -31,8 +31,25 @@ const (
 	settingsFile = "settings.yaml"
 )
 
+type networkCfg struct {
+	Bridge string `yaml:"bridge"`
+	Veth   string `yaml:"veth"`
+	CIDR   string `yaml:"cidr"`
+}
+
 type cfg struct {
-	Rootfs string `yaml:"rootfs"`
+	Rootfs  string     `yaml:"rootfs"`
+	Network networkCfg `yaml:"network"`
+}
+
+func defaultCfg() *cfg {
+	return &cfg{
+		Network: networkCfg{
+			Bridge: "cbr",
+			Veth:   "cveth",
+			CIDR:   "192.168.150.1/24",
+		},
+	}
 }
 
 // cfgPath specifies the default location of the config file
@@ -50,7 +67,7 @@ func loadCfg() (*cfg, error) {
 		return nil, err
 	}
 
-	c := &cfg{}
+	c := defaultCfg()
 	err = yaml.Unmarshal(bytes, c)
 	return c, err
 }

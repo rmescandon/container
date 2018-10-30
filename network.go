@@ -24,53 +24,50 @@ Source file including all the configuration for the NETWORK namespace of the con
 package container
 
 import (
-	"errors"
 	"fmt"
 	"net"
-
-	"github.com/vishvananda/netlink"
 )
 
-func configureNetworkOnHost(pid int) error {
-	if err := createBridge("thebridge", "10.20.30.1/24"); err != nil {
+func configureNetworkOnHost(bridge, veth, cidr string, pid int) error {
+	if err := createBridge(bridge, cidr); err != nil {
 		return err
 	}
 
-	if err := createVeths("veth"); err != nil {
+	if err := createVethPair(veth); err != nil {
 		return err
 	}
 
-	if err := attach("veth0", "thebridge"); err != nil {
+	veth0 := fmt.Sprintf("%s0", veth)
+	if err := attach(veth0, bridge); err != nil {
 		return err
 	}
 
-	if err := moveToNetworkNamespace("veth1", pid); err != nil {
-		return err
-	}
-
-	return nil
+	veth1 := fmt.Sprintf("%s1", veth)
+	return moveToNetworkNamespace(veth1, pid)
 }
 
-func configureNetworkOnContainer(pid int) error {
-	l, err := netlink.LinkByName("veth1")
+func configureNetworkOnContainer(veth, cidr string, pid int) error {
+	ip, subnet, err := net.ParseCIDR(cidr)
 	if err != nil {
+		return fmt.Errorf("Could not parse CIDR - %s", err)
+	}
+
+	// move to the next IP, that will be the one for veth1
+	next := nextIP(ip)
+	ipnet := &net.IPNet{IP: next, Mask: subnet.Mask}
+
+	veth1 := fmt.Sprintf("%s1", veth)
+	if err := configureLinkFromIP(veth1, ipnet); err != nil {
 		return err
 	}
 
-	ip, subnet, err := net.ParseCIDR("10.20.30.2/24")
-	if err != nil {
-		return fmt.Errorf("Could not parse veth2 IP - %s", err)
-	}
+	return addDefaultRoute(veth1, ip)
+}
 
-	addr := &netlink.Addr{IPNet: &net.IPNet{IP: ip, Mask: subnet.Mask}}
-	err = netlink.AddrAdd(l, addr)
-	if err != nil {
-		return errors.New("Unable to assign IP address '10.20.30.2' to veth1")
-	}
-
-	if err := netlink.LinkSetUp(l); err != nil {
-		return err
-	}
-
-	return addDefaultRoute("veth1", "10.20.30.1")
+func nextIP(ip net.IP) net.IP {
+	dup := make(net.IP, len(ip))
+	copy(dup, ip)
+	dup = dup.To4()
+	dup[3]++
+	return dup
 }

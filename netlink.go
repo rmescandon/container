@@ -24,7 +24,6 @@ Source file including all the configuration for the NETWORK namespace of the con
 package container
 
 import (
-	"errors"
 	"fmt"
 	"net"
 
@@ -46,24 +45,10 @@ func createBridge(name, cidr string) error {
 		return fmt.Errorf("Could not add the bridge - %s", err)
 	}
 
-	ip, subnet, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return fmt.Errorf("Could not parse input CIDR - %s", err)
-	}
-
-	addr := &netlink.Addr{IPNet: &net.IPNet{IP: ip, Mask: subnet.Mask}}
-	if err := netlink.AddrAdd(b, addr); err != nil {
-		return fmt.Errorf("Could not add address to the bridge - %s", err)
-	}
-
-	if err := netlink.LinkSetUp(b); err != nil {
-		return fmt.Errorf("Could not setup bridge - %s", err)
-	}
-
-	return nil
+	return configureLinkFromCIDR(name, cidr)
 }
 
-func createVeths(name string) error {
+func createVethPair(name string) error {
 	veth0 := fmt.Sprintf("%s0", name)
 	veth1 := fmt.Sprintf("%s1", name)
 
@@ -93,12 +78,12 @@ func createVeths(name string) error {
 func attach(veth0, bridge string) error {
 	v, err := netlink.LinkByName(veth0)
 	if err != nil {
-		return fmt.Errorf("Could not get veth by name - %s", err)
+		return fmt.Errorf("Could not get veth %s by name - %s", veth0, err)
 	}
 
 	b, err := netlink.LinkByName(bridge)
 	if err != nil {
-		return fmt.Errorf("Could not get bridge by name - %s", err)
+		return fmt.Errorf("Could not get bridge %s by name - %s", bridge, err)
 	}
 
 	return netlink.LinkSetMaster(v, b.(*netlink.Bridge))
@@ -113,21 +98,41 @@ func moveToNetworkNamespace(veth1 string, pid int) error {
 	return netlink.LinkSetNsPid(v, pid)
 }
 
-func addDefaultRoute(veth1, bridgeIP string) error {
-	v, err := netlink.LinkByName(veth1)
+func configureLinkFromCIDR(name, cidr string) error {
+	ip, subnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return fmt.Errorf("Could not parse %s CIDR - %s", name, err)
+	}
+
+	netip := &net.IPNet{IP: ip, Mask: subnet.Mask}
+	return configureLinkFromIP(name, netip)
+}
+
+func configureLinkFromIP(name string, ipnet *net.IPNet) error {
+	l, err := netlink.LinkByName(name)
 	if err != nil {
 		return err
 	}
 
-	ip := net.ParseIP(bridgeIP)
-	if ip == nil {
-		return errors.New("Could not parse route IP")
+	addr := &netlink.Addr{IPNet: ipnet}
+	err = netlink.AddrAdd(l, addr)
+	if err != nil {
+		return fmt.Errorf("Unable to assign address %s to %s", ipnet.String(), name)
+	}
+
+	return netlink.LinkSetUp(l)
+}
+
+func addDefaultRoute(veth string, bridgeIP net.IP) error {
+	v, err := netlink.LinkByName(veth)
+	if err != nil {
+		return err
 	}
 
 	route := &netlink.Route{
 		Scope:     netlink.SCOPE_UNIVERSE,
 		LinkIndex: v.Attrs().Index,
-		Gw:        ip,
+		Gw:        bridgeIP,
 	}
 
 	return netlink.RouteAdd(route)

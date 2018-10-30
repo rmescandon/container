@@ -22,6 +22,7 @@ package container
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"syscall"
@@ -94,7 +95,12 @@ func Run(args []string) error {
 		return fmt.Errorf("Could not start command execution - %s", err)
 	}
 
-	if err := configureNetworkOnHost(cmd.Process.Pid); err != nil {
+	c, err := loadCfg()
+	if err != nil {
+		return fmt.Errorf("Could not read the settings - %s", err)
+	}
+
+	if err := configureNetworkOnHost(c.Network.Bridge, c.Network.Veth, c.Network.CIDR, cmd.Process.Pid); err != nil {
 		return err
 	}
 
@@ -148,13 +154,20 @@ func reexec(args []string) {
 	}
 
 	// Configure veth1 interface
-	if err := configureNetworkOnContainer(cmd.Process.Pid); err != nil {
+	if err := configureNetworkOnContainer(c.Network.Veth, c.Network.CIDR, cmd.Process.Pid); err != nil {
 		fmt.Printf("Could not configure network on container - %s\n", err)
 		os.Exit(1)
 	}
 
 	if err := cmd.Wait(); err != nil {
 		fmt.Printf("Error waiting for the command execution to finish - %s\n", err)
+		os.Exit(1)
+	}
+}
+
+func assert(err error) {
+	if err != nil {
+		log.Println(err)
 		os.Exit(1)
 	}
 }

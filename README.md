@@ -45,15 +45,15 @@ Checkout and build container tool with:
 
 Launch container tool with:
 
-    $ $GOBIN/container run <list_of_commands_to_execute>
+    $ sudo $GOBIN/container run <list_of_commands_to_execute>
 
 for example, listing the files in the rootfs:
 
-    $ $GOBIN/container run /bin/sh ls -la
+    $ sudo $GOBIN/container run /bin/sh ls -la
 
 or simply entering into the container for a further cli executions:
 
-    $ $GOBIN/container run /bin/sh
+    $ sudo $GOBIN/container run /bin/sh
 
 All those commands will be executed in a container environment, isolated (more or less)
 from host.
@@ -65,6 +65,22 @@ You can check that
 * `ip link` shows container interfaces but not the host's
 * `id` into the container is the root one, but does not have root permissions over the host
 * container hostname is different from the host one
+
+!!!Note:
+    It is needed _sudo_ ing the command execution because setuid trick is still not
+    implemented and all the networking configuration requires host root privileges.
+    but in future this won't be required. Sorry for the temporary inconvenience
+
+## Settings
+
+Not only rootfs can be configured in the **/etc/container/settings.yaml** file but
+the bridge name, virtual devices or the bridge CIDR, like:
+
+    rootfs: /data/rootfs/bionic
+    network:
+        bridge: thebridge
+        veth : theveth
+        cidr: 10.20.30.40/24
 
 ## TBD
 
