@@ -43,17 +43,29 @@ Checkout and build container tool with:
 
 ## Run
 
+### Setuid
+
+Before launching the container, you need to do a trick for preventing to run it as root.
+You must set a flag in the file permissions for running the executable as the owner,
+and set root as the owner. That ways the OS thinks that root is launching the container and
+thus it is able to configure the network interfaces:
+
+    $ sudo chown root $GOBIN/container
+    $ sudo chmod +s $GOBIN/container
+
+### Launch
+
 Launch container tool with:
 
-    $ sudo $GOBIN/container run <list_of_commands_to_execute>
+    $ $GOBIN/container run <list_of_commands_to_execute>
 
 for example, listing the files in the rootfs:
 
-    $ sudo $GOBIN/container run /bin/sh ls -la
+    $ $GOBIN/container run /bin/sh ls -la
 
 or simply entering into the container for a further cli executions:
 
-    $ sudo $GOBIN/container run /bin/sh
+    $ $GOBIN/container run /bin/sh
 
 All those commands will be executed in a container environment, isolated (more or less)
 from host.
@@ -65,11 +77,6 @@ You can check that
 * `ip link` shows container interfaces but not the host's
 * `id` into the container is the root one, but does not have root permissions over the host
 * container hostname is different from the host one
-
-!!!Note:
-    It is needed _sudo_ ing the command execution because setuid trick is still not
-    implemented and all the networking configuration requires host root privileges.
-    but in future this won't be required. Sorry for the temporary inconvenience
 
 ## Settings
 

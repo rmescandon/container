@@ -58,7 +58,7 @@ func Run(args []string) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
+	cmd.Env = os.Environ()
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		// Namespaces to clone
 		Cloneflags: syscall.CLONE_NEWNS |
@@ -82,6 +82,9 @@ func Run(args []string) error {
 				Size:        1,
 			},
 		},
+		// Maintain the root permissions for configuring network into the container
+		// FIXME: execute only the network configuration as root
+		Credential: &syscall.Credential{Uid: 0},
 	}
 
 	if err := cmd.Start(); err != nil {
@@ -107,7 +110,7 @@ func Run(args []string) error {
 func reexec(args []string) {
 	// Setup container hostname
 	// (It'll be shown as container prompt)
-	hostname := fmt.Sprintf("[container-%v] # ", randStr(6))
+	hostname := fmt.Sprintf("container-%v", randStr(6))
 	assert(syscall.Sethostname([]byte(hostname)))
 
 	c, err := loadCfg()
@@ -127,7 +130,7 @@ func reexec(args []string) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Env = []string{fmt.Sprintf("PS1=%v", hostname)}
+	cmd.Env = []string{fmt.Sprintf("PS1=[%v] # ", hostname)}
 
 	assert(cmd.Start())
 
